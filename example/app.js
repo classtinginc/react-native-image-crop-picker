@@ -107,7 +107,7 @@ export default class App extends Component {
     });
   }
 
-  pickSingle(cropit, circular=false, mediaType) {
+  pickSingle(cropit, circular=false, mediaType = 'any') {
     ImagePicker.openPicker({
       width: 500,
       height: 500,
@@ -118,6 +118,7 @@ export default class App extends Component {
       compressImageQuality: 1,
       compressVideoPreset: 'MediumQuality',
       includeExif: true,
+      mediaType: mediaType,
     }).then(image => {
       console.log('received image', image);
       this.setState({
@@ -130,13 +131,16 @@ export default class App extends Component {
     });
   }
 
-  pickMultiple() {
+  pickMultiple(mediaType = 'any', maxFiles = 1000) {
     ImagePicker.openPicker({
       multiple: true,
       waitAnimationEnd: false,
       includeExif: true,
       forceJpg: true,
+      mediaType: mediaType,
+      maxFiles: maxFiles,
     }).then(images => {
+      console.log('image length : ' + images.length);
       this.setState({
         image: null,
         images: images.map(i => {
@@ -215,7 +219,7 @@ export default class App extends Component {
       <TouchableOpacity onPress={() => this.pickSingle(true, true)} style={styles.button}>
         <Text style={styles.text}>Select Single With Circular Cropping</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={this.pickMultiple.bind(this)} style={styles.button}>
+      <TouchableOpacity onPress={() => this.pickMultiple.bind(this)()} style={styles.button}>
         <Text style={styles.text}>Select Multiple</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={this.cleanupImages.bind(this)} style={styles.button}>
@@ -223,6 +227,12 @@ export default class App extends Component {
       </TouchableOpacity>
       <TouchableOpacity onPress={this.cleanupSingleImage.bind(this)} style={styles.button}>
         <Text style={styles.text}>Cleanup Single Image</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => this.pickSingle(false, false, "photo")} style={styles.button}>
+        <Text style={styles.text}>Select Single Photo</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => this.pickMultiple.bind(this)("photo", 3)} style={styles.button}>
+        <Text style={styles.text}>Select Multiple Photos</Text>
       </TouchableOpacity>
     </View>);
   }

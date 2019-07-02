@@ -34,6 +34,10 @@ import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
+import com.classtinginc.image_picker.ImagePicker;
+import com.classtinginc.image_picker.models.Image;
+import com.classtinginc.image_picker.consts.Extra;
+import com.google.gson.Gson;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -79,6 +83,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean enableRotationGesture = false;
     private boolean disableCropperColorSetters = false;
     private boolean useFrontCamera = false;
+    private int maxFiles = 1;
     private ReadableMap options;
 
     //Grey 800
@@ -120,6 +125,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private void setConfiguration(final ReadableMap options) {
         mediaType = options.hasKey("mediaType") ? options.getString("mediaType") : "any";
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
+        maxFiles = options.hasKey("maxFiles") ? options.getInt("maxFiles") : 1;
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
         includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : 0;
@@ -335,14 +341,22 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         } catch (Exception e) {
             resultCollector.notifyProblem(E_FAILED_TO_OPEN_CAMERA, e);
         }
-
     }
 
     private void initiatePicker(final Activity activity) {
         try {
             final Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
 
-            if (cropping || mediaType.equals("photo")) {
+            if (mediaType.equals("photo")) {
+                ImagePicker
+                    .with(activity)
+                    .maxSize(maxFiles)
+                    .allowMultiple(multiple)
+                    .startActivityForResult(IMAGE_PICKER_REQUEST);
+                return;
+            }
+            
+            if (cropping) {
                 galleryIntent.setType("image/*");
             } else if (mediaType.equals("video")) {
                 galleryIntent.setType("video/*");
@@ -375,7 +389,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         setConfiguration(options);
         resultCollector.setup(promise, multiple);
 
-        permissionsCheck(activity, promise, Collections.singletonList(Manifest.permission.WRITE_EXTERNAL_STORAGE), new Callable<Void>() {
+        permissionsCheck(activity, promise, Arrays.asList(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE), new Callable<Void>() {
             @Override
             public Void call() {
                 initiatePicker(activity);
@@ -457,13 +471,12 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         return getImage(activity, path);
     }
 
-    private void getAsyncSelection(final Activity activity, Uri uri, boolean isCamera) throws Exception {
-        String path = resolveRealPath(activity, uri, isCamera);
+    private void getAsyncSelection(final Activity activity, String path) throws Exception {
         if (path == null || path.isEmpty()) {
             resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve asset path.");
             return;
         }
-
+        
         String mime = getMimeType(path);
         if (mime != null && mime.startsWith("video/")) {
             getVideo(activity, path, mime);
@@ -591,7 +604,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 ex.printStackTrace();
             }
         }
-
         return image;
     }
 
@@ -652,41 +664,55 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         if (resultCode == Activity.RESULT_CANCELED) {
             resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
         } else if (resultCode == Activity.RESULT_OK) {
-            if (multiple) {
-                ClipData clipData = data.getClipData();
-
-                try {
-                    // only one image selected
-                    if (clipData == null) {
-                        resultCollector.setWaitCount(1);
-                        getAsyncSelection(activity, data.getData(), false);
-                    } else {
-                        resultCollector.setWaitCount(clipData.getItemCount());
-                        for (int i = 0; i < clipData.getItemCount(); i++) {
-                            getAsyncSelection(activity, clipData.getItemAt(i).getUri(), false);
+            try {
+                if (mediaType.equals("photo")) {
+                    if (data != null && data.hasExtra(Extra.DATA)) {
+                        Image[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Image[].class);
+                        resultCollector.setWaitCount(array.length);
+                        for (int i = 0; i < array.length; i++) {
+                            getAsyncSelection(activity, array[i].getThumbPath());
                         }
                     }
-                } catch (Exception ex) {
-                    resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
-                }
-
-            } else {
-                Uri uri = data.getData();
-
-                if (uri == null) {
-                    resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve image url");
                     return;
                 }
-
-                if (cropping) {
-                    startCropping(activity, uri);
-                } else {
+                if (multiple) {
+                    ClipData clipData = data.getClipData();
                     try {
-                        getAsyncSelection(activity, uri, false);
+                        // only one image selected
+                        if (clipData == null) {
+                            resultCollector.setWaitCount(1);
+                            getAsyncSelection(activity, resolveRealPath(activity, data.getData(), false));
+                        } else {
+                            resultCollector.setWaitCount(clipData.getItemCount());
+                            for (int i = 0; i < clipData.getItemCount(); i++) {
+                                getAsyncSelection(activity, resolveRealPath(activity, clipData.getItemAt(i).getUri(), false));
+                            }
+                        }
                     } catch (Exception ex) {
                         resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
                     }
+
+                } else {
+                    Uri uri = data.getData();
+
+                    if (uri == null) {
+                        resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve image url");
+                        return;
+                    }
+
+                    if (cropping) {
+                        startCropping(activity, uri);
+                    } else {
+                        try {
+                            getAsyncSelection(activity, resolveRealPath(activity, uri, false));
+                        } catch (Exception ex) {
+                            resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, e.getMessage());
             }
         }
     }
