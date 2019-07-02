@@ -1,22 +1,30 @@
-import React, { Component } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ImagePicker from 'react-native-image-crop-picker';
-import Video from 'react-native-video';
+import React, { Component } from "react";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import ImagePicker from "react-native-image-crop-picker";
+import Video from "react-native-video";
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   button: {
-    backgroundColor: 'blue',
+    backgroundColor: "blue",
     marginBottom: 10,
   },
   text: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 
@@ -29,7 +37,7 @@ export default class App extends Component {
     };
   }
 
-  pickSingleWithCamera(cropping, mediaType = 'photo') {
+  pickSingleWithCamera(cropping, mediaType = "photo") {
     ImagePicker.openCamera({
       cropping: cropping,
       width: 500,
@@ -38,7 +46,7 @@ export default class App extends Component {
       mediaType,
     })
       .then((image) => {
-        console.log('received image', image);
+        console.log("received image", image);
         this.setState({
           image: {
             uri: image.path,
@@ -61,7 +69,7 @@ export default class App extends Component {
       includeExif: true,
     })
       .then((image) => {
-        console.log('received base64 image');
+        console.log("received base64 image");
         this.setState({
           image: {
             uri: `data:${image.mime};base64,` + image.data,
@@ -77,7 +85,7 @@ export default class App extends Component {
   cleanupImages() {
     ImagePicker.clean()
       .then(() => {
-        console.log('removed tmp images from tmp directory');
+        console.log("removed tmp images from tmp directory");
       })
       .catch((e) => {
         alert(e);
@@ -90,7 +98,7 @@ export default class App extends Component {
       (this.state.images && this.state.images.length
         ? this.state.images[0]
         : null);
-    console.log('will cleanup image', image);
+    console.log("will cleanup image", image);
 
     ImagePicker.cleanSingle(image ? image.uri : null)
       .then(() => {
@@ -104,8 +112,8 @@ export default class App extends Component {
   cropLast() {
     if (!this.state.image) {
       return Alert.alert(
-        'No image',
-        'Before open cropping only, please select image'
+        "No image",
+        "Before open cropping only, please select image"
       );
     }
 
@@ -115,7 +123,7 @@ export default class App extends Component {
       height: 200,
     })
       .then((image) => {
-        console.log('received cropped image', image);
+        console.log("received cropped image", image);
         this.setState({
           image: {
             uri: image.path,
@@ -132,26 +140,26 @@ export default class App extends Component {
       });
   }
 
-  pickSingle(cropit, circular=false, mediaType = 'any') {
+  pickSingle(cropit, circular = false, mediaType = "any") {
     ImagePicker.openPicker({
       width: 500,
       height: 500,
       cropping: cropit,
       cropperCircleOverlay: circular,
-      sortOrder: 'none',
+      sortOrder: "none",
       compressImageMaxWidth: 1000,
       compressImageMaxHeight: 1000,
       compressImageQuality: 1,
-      compressVideoPreset: 'MediumQuality',
+      compressVideoPreset: "MediumQuality",
       includeExif: true,
       mediaType: mediaType,
-      cropperStatusBarColor: 'white',
-      cropperToolbarColor: 'white',
-      cropperActiveWidgetColor: 'white',
-      cropperToolbarWidgetColor: '#3498DB',
+      cropperStatusBarColor: "white",
+      cropperToolbarColor: "white",
+      cropperActiveWidgetColor: "white",
+      cropperToolbarWidgetColor: "#3498DB",
     })
       .then((image) => {
-        console.log('received image', image);
+        console.log("received image", image);
         this.setState({
           image: {
             uri: image.path,
@@ -167,22 +175,22 @@ export default class App extends Component {
       });
   }
 
-  pickMultiple(mediaType = 'any', maxFiles = 1000) {
+  pickMultiple(mediaType = "any", maxFiles = 1000) {
     ImagePicker.openPicker({
       multiple: true,
       waitAnimationEnd: false,
-      sortOrder: 'desc',
+      sortOrder: "desc",
       includeExif: true,
       forceJpg: true,
       mediaType: mediaType,
       maxFiles: maxFiles,
     })
       .then((images) => {
-        console.log('image length : ' + images.length);
+        console.log("image length : " + images.length);
         this.setState({
           image: null,
           images: images.map((i) => {
-            console.log('received image', i);
+            console.log("received image", i);
             return {
               uri: i.path,
               width: i.width,
@@ -200,17 +208,17 @@ export default class App extends Component {
   }
 
   renderVideo(video) {
-    console.log('rendering video');
+    console.log("rendering video");
     return (
       <View style={{ height: 300, width: 300 }}>
         <Video
           source={{ uri: video.uri, type: video.mime }}
-          style={{ position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 }}
+          style={{ position: "absolute", top: 0, left: 0, bottom: 0, right: 0 }}
           rate={1}
           paused={false}
           volume={1}
           muted={false}
-          resizeMode={'cover'}
+          resizeMode={"cover"}
           onError={(e) => console.log(e)}
           onLoad={(load) => console.log(load)}
           repeat={true}
@@ -222,14 +230,14 @@ export default class App extends Component {
   renderImage(image) {
     return (
       <Image
-        style={{ width: 300, height: 300, resizeMode: 'contain' }}
+        style={{ width: 300, height: 300, resizeMode: "contain" }}
         source={image}
       />
     );
   }
 
   renderAsset(image) {
-    if (image.mime && image.mime.toLowerCase().indexOf('video/') !== -1) {
+    if (image.mime && image.mime.toLowerCase().indexOf("video/") !== -1) {
       return this.renderVideo(image);
     }
 
@@ -256,7 +264,7 @@ export default class App extends Component {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() =>
-            this.pickSingleWithCamera(false, (mediaType = 'video'))
+            this.pickSingleWithCamera(false, (mediaType = "video"))
           }
           style={styles.button}
         >
