@@ -14,6 +14,10 @@ iOS/Android image picker with support for camera, video, configurable compressio
 <img width=200 title="iOS Multiple Pick" src="https://github.com/ivpusic/react-native-image-crop-picker/blob/master/images/ios_multiple_pick.png">
 </p>
 
+## Important note
+
+If you are using react-native >= 0.60 use react-native-image-crop-picker version >= 0.25.0. Otherwise use version < 0.25.0.
+
 ## Usage
 
 Import library
@@ -129,7 +133,7 @@ ImagePicker.clean().then(() => {
 | maxFiles (ios only)                     |            number (default 5)            | Max number of files to select when using `multiple` option |
 | waitAnimationEnd (ios only)             |           bool (default true)            | Promise will resolve/reject once ViewController `completion` block is called |
 | smartAlbums (ios only)                  | array ([supported values](https://github.com/ivpusic/react-native-image-crop-picker/blob/master/README.md#smart-album-types-ios)) (default ['UserLibrary', 'PhotoStream', 'Panoramas', 'Videos', 'Bursts']) | List of smart albums to choose from      |
-| useFrontCamera                          |           bool (default false)           | Whether to default to the front/'selfie' camera when opened |
+| useFrontCamera                          |           bool (default false)           | Whether to default to the front/'selfie' camera when opened. Please note that not all Android devices handle this parameter, see [issue #1058](https://github.com/ivpusic/react-native-image-crop-picker/issues/1058)|
 | compressVideoPreset (ios only)          |      string (default MediumQuality)      | Choose which preset will be used for video compression |
 | compressImageMaxWidth                   |          number (default none)           | Compress image with maximum width        |
 | compressImageMaxHeight                  |          number (default none)           | Compress image with maximum height       |
@@ -138,6 +142,7 @@ ImagePicker.clean().then(() => {
 | mediaType                               |           string (default any)           | Accepted mediaType for image selection, can be one of: 'photo', 'video', or 'any' |
 | showsSelectedCount (ios only)           |           bool (default true)            | Whether to show the number of selected assets |
 | forceJpg (ios only)           |           bool (default false)            | Whether to convert photos to JPG. This will also convert any Live Photo into its JPG representation |
+| sortOrder (ios only)           |           string (default 'none', supported values: 'asc', 'desc', 'none')            | Applies a sort order on the creation date on how media is displayed within the albums/detail photo views when opening the image picker |
 | showCropGuidelines (android only)       |           bool (default true)            | Whether to show the 3x3 grid on top of the image during cropping |
 | showCropFrame (android only)       |           bool (default true)            | Whether to show crop frame during cropping |
 | hideBottomControls (android only)       |           bool (default false)           | Whether to display bottom controls       |
@@ -180,6 +185,17 @@ npm i react-native-image-crop-picker --save
 ## Step 2
 
 ### iOS
+
+NOTE: If you are using react-native >= 0.60 autolinking, all you have to do is:
+
+- Install the library via NPM or Yarm
+- Run the following:
+```
+cd ios
+pod install
+```
+
+Then the library will be successfully linked.
 
 #### - If you use Cocoapods which is highly recommended:
 
@@ -240,6 +256,8 @@ react-native link react-native-image-crop-picker
 ```
 
 ### Android
+
+NOTE: If you are using react-native >= 0.60 autolinking, you can skip this step.
 
 ```bash
 react-native link react-native-image-crop-picker
