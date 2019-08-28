@@ -376,11 +376,11 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
             if (mediaType.equals("photo")) {
                 ImagePicker
-                    .with(activity)
-                    .maxSize(maxFiles)
-                    .availableSize(availableSize)
-                    .allowMultiple(multiple)
-                    .startActivityForResult(IMAGE_PICKER_REQUEST);
+                        .with(activity)
+                        .maxSize(maxFiles)
+                        .availableSize(availableSize)
+                        .allowMultiple(multiple)
+                        .startActivityForResult(IMAGE_PICKER_REQUEST);
                 return;
             }
 
