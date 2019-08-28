@@ -3,6 +3,8 @@ package com.reactnative.ivpusic.imagepicker;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -13,12 +15,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.webkit.MimeTypeMap;
-import android.content.ContentResolver;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Callback;
@@ -42,7 +42,6 @@ import com.google.gson.Gson;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -347,18 +346,18 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     private void initiatePicker(final Activity activity) {
         try {
-            final Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            final Intent galleryIntent = new Intent(Intent.ACTION_PICK);
 
             if (mediaType.equals("photo")) {
                 ImagePicker
-                    .with(activity)
-                    .maxSize(maxFiles)
-                    .availableSize(availableSize)
-                    .allowMultiple(multiple)
-                    .startActivityForResult(IMAGE_PICKER_REQUEST);
+                        .with(activity)
+                        .maxSize(maxFiles)
+                        .availableSize(availableSize)
+                        .allowMultiple(multiple)
+                        .startActivityForResult(IMAGE_PICKER_REQUEST);
                 return;
             }
-            
+
             if (cropping) {
                 galleryIntent.setType("image/*");
             } else if (mediaType.equals("video")) {
@@ -371,10 +370,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
             galleryIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
-            galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
-            final Intent chooserIntent = Intent.createChooser(galleryIntent, "Pick an image");
-            activity.startActivityForResult(chooserIntent, IMAGE_PICKER_REQUEST);
+            activity.startActivityForResult(galleryIntent, IMAGE_PICKER_REQUEST);
         } catch (Exception e) {
             resultCollector.notifyProblem(E_FAILED_TO_SHOW_PICKER, e);
         }
@@ -474,13 +471,16 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         return getImage(activity, path);
     }
 
-    private void getAsyncSelection(final Activity activity, String path) throws Exception {
+    private void getAsyncSelection(final Activity activity, String path, String mimeType) throws Exception {
         if (path == null || path.isEmpty()) {
             resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve asset path.");
             return;
         }
-        
-        String mime = getMimeType(path);
+
+        String mime = mimeType;
+        if (mime == null || mime.isEmpty()) {
+            mime = getMimeType(path);
+        }
         if (mime != null && mime.startsWith("video/")) {
             getVideo(activity, path, mime);
             return;
@@ -558,7 +558,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         return path;
     }
 
-    private BitmapFactory.Options validateImage(String path) throws Exception {
+    private BitmapFactory.Options validateImage(Context context, String path) throws Exception {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -579,13 +579,13 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         if (path.startsWith("http://") || path.startsWith("https://")) {
             throw new Exception("Cannot select remote files");
         }
-        BitmapFactory.Options original = validateImage(path);
+        BitmapFactory.Options original = validateImage(activity, path);
 
         // if compression options are provided image will be compressed. If none options is provided,
         // then original image will be returned
         File compressedImage = compression.compressImage(options, path, original);
         String compressedImagePath = compressedImage.getPath();
-        BitmapFactory.Options options = validateImage(compressedImagePath);
+        BitmapFactory.Options options = validateImage(activity, compressedImagePath);
         long modificationDate = new File(path).lastModified();
 
         image.putString("path", "file://" + compressedImagePath);
@@ -673,7 +673,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                         Image[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Image[].class);
                         resultCollector.setWaitCount(array.length);
                         for (int i = 0; i < array.length; i++) {
-                            getAsyncSelection(activity, array[i].getThumbPath());
+                            getAsyncSelection(activity, array[i].getThumbPath(), "");
                         }
                     }
                     return;
@@ -684,17 +684,16 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                         // only one image selected
                         if (clipData == null) {
                             resultCollector.setWaitCount(1);
-                            getAsyncSelection(activity, resolveRealPath(activity, data.getData(), false));
+                            getAsyncSelection(activity, resolveRealPath(activity, data.getData(), false), getMimeTypeFromIntent(data));
                         } else {
                             resultCollector.setWaitCount(clipData.getItemCount());
                             for (int i = 0; i < clipData.getItemCount(); i++) {
-                                getAsyncSelection(activity, resolveRealPath(activity, clipData.getItemAt(i).getUri(), false));
+                                getAsyncSelection(activity, resolveRealPath(activity, clipData.getItemAt(i).getUri(), false), "");
                             }
                         }
                     } catch (Exception ex) {
                         resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
                     }
-
                 } else {
                     Uri uri = data.getData();
 
@@ -707,7 +706,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                         startCropping(activity, uri);
                     } else {
                         try {
-                            getAsyncSelection(activity, resolveRealPath(activity, uri, false));
+                            getAsyncSelection(activity, resolveRealPath(activity, uri, false), getMimeTypeFromIntent(data));
                         } catch (Exception ex) {
                             resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
                         }
@@ -718,6 +717,13 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, e.getMessage());
             }
         }
+    }
+
+    private String getMimeTypeFromIntent(Intent intent) {
+        if (intent != null && intent.getExtras() != null) {
+            return intent.getExtras().getString("mimeType", "");
+        }
+        return "";
     }
 
     private void cameraPickerResult(Activity activity, final int requestCode, final int resultCode, final Intent data) {
