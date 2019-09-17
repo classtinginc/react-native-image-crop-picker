@@ -243,6 +243,10 @@ static CGSize CGSizeScale(CGSize size, CGFloat scale) {
                 break;
         }
 
+        // ordering 기능 추가 (최근 사진이 제일 먼저 뜨도록)
+        // https://github.com/ivpusic/react-native-image-crop-picker/issues/1087#issuecomment-519449365
+        options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending: NO]];
+
         self.fetchResult = [PHAsset fetchAssetsInAssetCollection:self.assetCollection options:options];
 
         if ([self isAutoDeselectEnabled] && self.imagePickerController.selectedAssets.count > 0) {
