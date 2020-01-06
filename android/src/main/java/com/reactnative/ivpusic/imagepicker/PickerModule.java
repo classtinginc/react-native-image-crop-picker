@@ -15,10 +15,15 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.FileProvider;
+
+// import android.support.v4.app.ActivityCompat;
+// import android.support.v4.content.FileProvider;
+
 import android.util.Base64;
 import android.webkit.MimeTypeMap;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Callback;
@@ -410,34 +415,41 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         setConfiguration(options);
         resultCollector.setup(promise, false);
 
-        Uri uri = Uri.parse(options.getString("path"));
-        startCropping(activity, uri);
+        final Uri uri = Uri.parse(options.getString("path"));
+        permissionsCheck(activity, promise, Collections.singletonList(Manifest.permission.WRITE_EXTERNAL_STORAGE), new Callable<Void>() {
+            @Override
+            public Void call() {
+                startCropping(activity, uri);
+                return null;
+            }
+        });
     }
 
     private String getBase64StringFromFile(String absoluteFilePath) {
-        try (
-                InputStream inputStream = new FileInputStream(new File(absoluteFilePath));
-                ByteArrayOutputStream output = new ByteArrayOutputStream()
-        ) {
-            byte[] bytes;
-            byte[] buffer = new byte[8192];
-            int bytesRead;
+        InputStream inputStream;
 
-            try {
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    output.write(buffer, 0, bytesRead);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            bytes = output.toByteArray();
-            return Base64.encodeToString(bytes, Base64.NO_WRAP);
-        } catch (IOException e) {
+        try {
+            inputStream = new FileInputStream(new File(absoluteFilePath));
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
             return null;
         }
 
+        byte[] bytes;
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        try {
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                output.write(buffer, 0, bytesRead);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        bytes = output.toByteArray();
+        return Base64.encodeToString(bytes, Base64.NO_WRAP);
     }
 
     private String getMimeType(String url) {
@@ -628,7 +640,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         }
     }
 
-    private void startCropping(Activity activity, Uri uri) {
+    private void startCropping(final Activity activity, final Uri uri) {
         UCrop.Options options = new UCrop.Options();
         options.setCompressionFormat(Bitmap.CompressFormat.JPEG);
         options.setCompressionQuality(100);
