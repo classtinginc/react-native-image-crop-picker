@@ -413,7 +413,14 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         setConfiguration(options);
         resultCollector.setup(promise, multiple);
 
-        permissionsCheck(activity, promise, Arrays.asList(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE), new Callable<Void>() {
+        List<String> permissions;
+        if(Build.VERSION.SDK_INT >= 33) {
+            permissions = Arrays.asList(Manifest.permission.READ_MEDIA_IMAGES);
+        } else {
+            permissions = Arrays.asList(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+
+        permissionsCheck(activity, promise, permissions, new Callable<Void>() {
             @Override
             public Void call() {
                 initiatePicker(activity);
