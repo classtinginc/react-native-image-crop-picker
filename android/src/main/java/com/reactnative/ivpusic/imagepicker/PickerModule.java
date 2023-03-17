@@ -414,8 +414,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         resultCollector.setup(promise, multiple);
 
         List<String> permissions;
-        if(Build.VERSION.SDK_INT >= 33) {
-            permissions = Arrays.asList(Manifest.permission.READ_MEDIA_IMAGES);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions = Arrays.asList(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO);
         } else {
             permissions = Arrays.asList(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE);
         }
