@@ -38,7 +38,7 @@ import com.facebook.react.modules.core.PermissionListener;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 import com.classtinginc.image_picker.ImagePicker;
-import com.classtinginc.image_picker.models.Image;
+import com.classtinginc.image_picker.models.Media;
 import com.classtinginc.image_picker.consts.Extra;
 import com.google.gson.Gson;
 
@@ -792,7 +792,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             try {
                 if (mediaType.equals("photo")) {
                     if (data != null && data.hasExtra(Extra.DATA)) {
-                        Image[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Image[].class);
+                        Media[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Media[].class);
                         resultCollector.setWaitCount(array.length);
                         for (int i = 0; i < array.length; i++) {
                             getAsyncSelection(activity, array[i].getThumbPath(), "");
