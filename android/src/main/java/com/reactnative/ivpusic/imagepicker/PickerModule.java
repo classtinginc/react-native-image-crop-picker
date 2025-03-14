@@ -95,7 +95,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean disableCropperColorSetters = false;
     private boolean useFrontCamera = false;
     private int maxFiles = 1;
-    private int availableSize = 1;
     private ReadableMap options;
 
     private String cropperActiveWidgetColor = null;
@@ -135,7 +134,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         mediaType = options.hasKey("mediaType") ? options.getString("mediaType") : "any";
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
         maxFiles = options.hasKey("maxFiles") ? options.getInt("maxFiles") : 1;
-        availableSize = options.hasKey("availableSize") ? options.getInt("availableSize") : 1;
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
         includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : 0;
@@ -378,8 +376,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 ImagePicker
                         .with(activity)
                         .maxSize(maxFiles)
-                        .availableSize(availableSize)
-                        .allowMultiple(multiple)
                         .startActivityForResult(IMAGE_PICKER_REQUEST);
                 return;
             }
