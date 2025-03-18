@@ -38,7 +38,7 @@ import com.facebook.react.modules.core.PermissionListener;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 import com.classtinginc.image_picker.ImagePicker;
-import com.classtinginc.image_picker.models.Image;
+import com.classtinginc.image_picker.models.Media;
 import com.classtinginc.image_picker.consts.Extra;
 import com.google.gson.Gson;
 
@@ -95,7 +95,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean disableCropperColorSetters = false;
     private boolean useFrontCamera = false;
     private int maxFiles = 1;
-    private int availableSize = 1;
     private ReadableMap options;
 
     private String cropperActiveWidgetColor = null;
@@ -135,7 +134,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         mediaType = options.hasKey("mediaType") ? options.getString("mediaType") : "any";
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
         maxFiles = options.hasKey("maxFiles") ? options.getInt("maxFiles") : 1;
-        availableSize = options.hasKey("availableSize") ? options.getInt("availableSize") : 1;
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
         includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : 0;
@@ -377,9 +375,15 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             if (mediaType.equals("photo")) {
                 ImagePicker
                         .with(activity)
+                        .mediaType("image")
                         .maxSize(maxFiles)
-                        .availableSize(availableSize)
-                        .allowMultiple(multiple)
+                        .startActivityForResult(IMAGE_PICKER_REQUEST);
+                return;
+            } else if (mediaType.equals("imageandvideo")) {
+                ImagePicker
+                        .with(activity)
+                        .mediaType("imageandvideo")
+                        .maxSize(maxFiles)
                         .startActivityForResult(IMAGE_PICKER_REQUEST);
                 return;
             }
@@ -419,11 +423,11 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         setConfiguration(options);
         resultCollector.setup(promise, multiple);
 
-        List<String> permissions;
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions = Arrays.asList(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO);
-        } else {
-            permissions = Arrays.asList(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE);
+        List<String> permissions = new ArrayList<>();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         }
 
         permissionsCheck(activity, promise, permissions, new Callable<Void>() {
@@ -794,12 +798,12 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
         } else if (resultCode == Activity.RESULT_OK) {
             try {
-                if (mediaType.equals("photo")) {
+                if (mediaType.equals("photo") || mediaType.equals("imageandvideo")) {
                     if (data != null && data.hasExtra(Extra.DATA)) {
-                        Image[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Image[].class);
+                        Media[] array = new Gson().fromJson(data.getStringExtra(Extra.DATA), Media[].class);
                         resultCollector.setWaitCount(array.length);
                         for (int i = 0; i < array.length; i++) {
-                            getAsyncSelection(activity, array[i].getThumbPath(), "");
+                            getAsyncSelection(activity, array[i].getMediaPath(), "");
                         }
                     }
                     return;
