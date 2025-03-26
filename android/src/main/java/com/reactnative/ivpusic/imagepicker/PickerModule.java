@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
@@ -715,9 +716,24 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         BitmapFactory.Options options = validateImage(activity, compressedImagePath);
         long modificationDate = new File(path).lastModified();
 
+        int height = options.outHeight;
+        int width = options.outWidth;
+
+        // 이미지가 90도 또는 270도로 회전된 경우 width와 height를 교환한다.
+        ExifInterface originalExif = new ExifInterface(path);
+        int orientation = originalExif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+        if (orientation == ExifInterface.ORIENTATION_ROTATE_90 ||
+                orientation == ExifInterface.ORIENTATION_ROTATE_270 ||
+                orientation == ExifInterface.ORIENTATION_TRANSPOSE ||
+                orientation == ExifInterface.ORIENTATION_TRANSVERSE) {
+            int temp = width;
+            width = height;
+            height = temp;
+        }
+
         image.putString("path", "file://" + compressedImagePath);
-        image.putInt("width", options.outWidth);
-        image.putInt("height", options.outHeight);
+        image.putInt("width", width);
+        image.putInt("height", height);
         image.putString("mime", options.outMimeType);
         image.putInt("size", (int) new File(compressedImagePath).length());
         image.putString("modificationDate", String.valueOf(modificationDate));
