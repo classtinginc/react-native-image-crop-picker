@@ -93,4 +93,8 @@ class ResultCollector {
         promise.reject(code, throwable);
         resultSent = true;
     }
+
+    synchronized void addWaitCount() {
+        waitCounter.addAndGet(1);
+    }
 }
