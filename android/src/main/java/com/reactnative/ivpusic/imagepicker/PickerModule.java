@@ -535,7 +535,15 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             return;
         }
 
-        resultCollector.notifySuccess(getImage(activity, path));
+        new Thread(() -> {
+            try {
+                WritableMap image = getImage(activity, path);
+                activity.runOnUiThread(() -> resultCollector.notifySuccess(image));
+            } catch (Exception e) {
+                // 처리에 문제가 발생한 이미지는 무시처리
+                Log.e("image-crop-picker", "" + e);
+            }
+        }).start();
     }
 
     private Bitmap validateVideo(String path) throws Exception {
